@@ -1,0 +1,92 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"log"
+	"os"
+	"strings"
+	"sync"
+
+	"github.com/machinebox/graphql"
+	"github.com/y-yagi/go-buildkite/buildkite"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
+)
+
+var (
+	apiToken  = kingpin.Flag("token", "API token").Required().String()
+	buildSlug = kingpin.Flag("slug", "Build Slug").Required().String()
+	debug     = kingpin.Flag("debug", "Enable debugging").Bool()
+)
+
+type responseType struct {
+	Build struct {
+		Jobs struct {
+			Edges []struct {
+				Node struct {
+					Uuid string
+				}
+			}
+		}
+	}
+}
+
+func main() {
+	kingpin.Parse()
+
+	graphqlClient := graphql.NewClient("https://graphql.buildkite.com/v1")
+
+	req := graphql.NewRequest(`
+		query ($slug: ID) {
+      build(slug: $slug) {
+        jobs(first: 30) {
+          edges {
+            node {
+              ... on JobTypeCommand {
+                uuid
+              }
+            }
+          }
+        }
+      }
+    }
+	`)
+
+	req.Var("slug", *buildSlug)
+	auth := fmt.Sprintf("Bearer %s", *apiToken)
+	req.Header.Set("Authorization", auth)
+	ctx := context.Background()
+
+	var responseData responseType
+	if err := graphqlClient.Run(ctx, req, &responseData); err != nil {
+		log.Fatalf("graphql failed: %s", err)
+	}
+
+	config, err := buildkite.NewTokenConfig(*apiToken, *debug)
+	if err != nil {
+		log.Fatalf("client config failed: %s", err)
+	}
+
+	buildkiteClient := buildkite.NewClient(config.Client())
+	jobArgs := strings.Split(*buildSlug, "/")
+	logger := log.New(os.Stdout, "", 0)
+	var wg sync.WaitGroup
+
+	for _, edge := range responseData.Build.Jobs.Edges {
+		wg.Add(1)
+
+		go func(uuid string) {
+			defer wg.Done()
+			buf := &bytes.Buffer{}
+			_, err := buildkiteClient.Jobs.GetLogOutput(jobArgs[0], jobArgs[1], jobArgs[2], uuid, buf)
+			if err != nil {
+				errmsg := fmt.Sprintf("Error: %v\n", err)
+				logger.Print(errmsg)
+			} else {
+				logger.Print(buf.String())
+			}
+		}(edge.Node.Uuid)
+	}
+	wg.Wait()
+}
