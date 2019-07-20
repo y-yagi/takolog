@@ -18,6 +18,7 @@ var (
 	apiToken  = kingpin.Flag("token", "API token").Required().String()
 	buildSlug = kingpin.Flag("slug", "Build Slug").Required().String()
 	debug     = kingpin.Flag("debug", "Enable debugging").Bool()
+	jobCount  = kingpin.Flag("count", "Number of jobs").Default("30").Int()
 )
 
 type responseType struct {
@@ -38,9 +39,9 @@ func main() {
 	graphqlClient := graphql.NewClient("https://graphql.buildkite.com/v1")
 
 	req := graphql.NewRequest(`
-		query ($slug: ID) {
+		query ($slug: ID, $jobCount: Int) {
       build(slug: $slug) {
-        jobs(first: 30) {
+        jobs(first: $jobCount) {
           edges {
             node {
               ... on JobTypeCommand {
@@ -54,6 +55,7 @@ func main() {
 	`)
 
 	req.Var("slug", *buildSlug)
+	req.Var("jobCount", *jobCount)
 	auth := fmt.Sprintf("Bearer %s", *apiToken)
 	req.Header.Set("Authorization", auth)
 	ctx := context.Background()
