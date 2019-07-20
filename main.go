@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -9,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/buildkite/go-buildkite/buildkite"
 	"github.com/machinebox/graphql"
-	"github.com/y-yagi/go-buildkite/buildkite"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -80,13 +79,12 @@ func main() {
 
 		go func(uuid string) {
 			defer wg.Done()
-			buf := &bytes.Buffer{}
-			_, err := buildkiteClient.Jobs.GetLogOutput(jobArgs[0], jobArgs[1], jobArgs[2], uuid, buf)
+			jobLog, _, err := buildkiteClient.Jobs.GetJobLog(jobArgs[0], jobArgs[1], jobArgs[2], uuid)
 			if err != nil {
 				errmsg := fmt.Sprintf("Error: %v\n", err)
 				logger.Print(errmsg)
 			} else {
-				logger.Print(buf.String())
+				logger.Print(*jobLog.Content)
 			}
 		}(edge.Node.Uuid)
 	}
