@@ -15,7 +15,7 @@ import (
 
 var (
 	apiToken  = kingpin.Flag("token", "API token").Required().OverrideDefaultFromEnvar("BUILDKITE_API_TOKEN").String()
-	buildSlug = kingpin.Flag("slug", "Build Slug").Required().String()
+	buildSlug = kingpin.Flag("slug", "Build slug(organization-slug/pipeline-slug/build-number)").Required().String()
 	debug     = kingpin.Flag("debug", "Enable debugging").Bool()
 	jobCount  = kingpin.Flag("count", "Number of jobs").Default("30").Int()
 )
