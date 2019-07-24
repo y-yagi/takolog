@@ -99,6 +99,9 @@ func main() {
 	}
 
 	graphqlClient := graphql.NewClient("https://graphql.buildkite.com/v1")
+	if *debug {
+		graphqlClient.Log = func(s string) { log.Println(s) }
+	}
 	req := graphql.NewRequest(query)
 
 	auth := fmt.Sprintf("Bearer %s", *apiToken)
