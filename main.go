@@ -22,7 +22,7 @@ var (
 
 type JobsResponse struct {
 	Build struct {
-		Jobs Job
+		Jobs Jobs
 	}
 }
 
@@ -30,20 +30,20 @@ type PipelineResponse struct {
 	Pipeline struct {
 		Builds struct {
 			Edges []struct {
-				Node struct {
+				Build struct {
 					ID   string
-					Jobs Job
-				}
+					Jobs Jobs
+				} `json:"Node"`
 			}
 		}
 	}
 }
 
-type Job struct {
+type Jobs struct {
 	Edges []struct {
-		Node struct {
+		Job struct {
 			Uuid string
-		}
+		} `json:"Node"`
 	}
 }
 
@@ -90,7 +90,7 @@ func main() {
 	kingpin.Parse()
 
 	var query string
-	var job Job
+	var jobs Jobs
 	var buildID string
 	if strings.Count(*buildSlug, "/") > 1 {
 		query = BuildQuery
@@ -112,15 +112,15 @@ func main() {
 		if err := graphqlClient.Run(ctx, req, &jobsResponse); err != nil {
 			log.Fatalf("graphql failed: %s", err)
 		}
-		job = jobsResponse.Build.Jobs
+		jobs = jobsResponse.Build.Jobs
 		buildID = strings.Split(*buildSlug, "/")[2]
 	} else {
 		var pipelineResponse PipelineResponse
 		if err := graphqlClient.Run(ctx, req, &pipelineResponse); err != nil {
 			log.Fatalf("graphql failed: %s", err)
 		}
-		job = pipelineResponse.Pipeline.Builds.Edges[0].Node.Jobs
-		buildID = pipelineResponse.Pipeline.Builds.Edges[0].Node.ID
+		jobs = pipelineResponse.Pipeline.Builds.Edges[0].Build.Jobs
+		buildID = pipelineResponse.Pipeline.Builds.Edges[0].Build.ID
 	}
 
 	config, err := buildkite.NewTokenConfig(*apiToken, *debug)
@@ -133,7 +133,7 @@ func main() {
 	logger := log.New(os.Stdout, "", 0)
 	var wg sync.WaitGroup
 
-	for _, edge := range job.Edges {
+	for _, edge := range jobs.Edges {
 		wg.Add(1)
 
 		go func(uuid string) {
@@ -145,7 +145,7 @@ func main() {
 			} else {
 				logger.Print(*jobLog.Content)
 			}
-		}(edge.Node.Uuid)
+		}(edge.Job.Uuid)
 	}
 	wg.Wait()
 }
