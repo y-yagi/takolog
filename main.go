@@ -64,9 +64,9 @@ const BuildQuery = `
 `
 
 const PipelineQuery = `
-  query ($slug: ID!, $jobCount: Int) {
+  query ($slug: ID!, $jobCount: Int, $state: [BuildStates!]) {
 		pipeline(slug: $slug) {
-      builds(first: 1) {
+			builds(first: 1, state: $state) {
         edges {
           node {
 						id
@@ -119,6 +119,7 @@ func main() {
 		buildID = strings.Split(*buildSlug, "/")[2]
 	} else {
 		var pipelineResponse PipelineResponse
+		req.Var("state", []string{"PASSED", "FAILED"})
 		if err := graphqlClient.Run(ctx, req, &pipelineResponse); err != nil {
 			log.Fatalf("graphql failed: %s", err)
 		}
