@@ -17,7 +17,7 @@ var (
 	apiToken  = kingpin.Flag("token", "API token").Required().OverrideDefaultFromEnvar("BUILDKITE_API_TOKEN").String()
 	buildSlug = kingpin.Flag("slug", "Build slug(organization-slug/pipeline-slug/build-number)").Required().String()
 	debug     = kingpin.Flag("debug", "Enable debugging").Bool()
-	jobCount  = kingpin.Flag("count", "Number of jobs").Default("80").Int()
+	jobCount  = kingpin.Flag("count", "Number of jobs").Default("120").Int()
 )
 
 type JobsResponse struct {
