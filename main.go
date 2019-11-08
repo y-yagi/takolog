@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/buildkite/go-buildkite/buildkite"
 	"github.com/machinebox/graphql"
-	"github.com/y-yagi/go-buildkite/buildkite"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
