@@ -20,36 +20,36 @@ var (
 	jobCount  = kingpin.Flag("count", "Number of jobs").Default("120").Int()
 )
 
-type JobsResponse struct {
+type jobsResponse struct {
 	Build struct {
-		Jobs Jobs
+		Jobs jobs
 	}
 }
 
-type PipelineResponse struct {
+type pipelineResponse struct {
 	Pipeline struct {
 		Builds struct {
 			Edges []struct {
-				Build `json:"Node"`
+				build `json:"Node"`
 			}
 		}
 	}
 }
 
-type Jobs struct {
+type jobs struct {
 	Edges []struct {
 		Job struct {
-			Uuid string
+			UUID string
 		} `json:"Node"`
 	}
 }
 
-type Build struct {
+type build struct {
 	ID   string
-	Jobs Jobs
+	Jobs jobs
 }
 
-const BuildQuery = `
+const buildQuery = `
   query ($slug: ID, $jobCount: Int) {
     build(slug: $slug) {
       jobs(first: $jobCount) {
@@ -65,7 +65,7 @@ const BuildQuery = `
   }
 `
 
-const PipelineQuery = `
+const pipelineQuery = `
   query ($slug: ID!, $jobCount: Int, $state: [BuildStates!]) {
 		pipeline(slug: $slug) {
 			builds(first: 1, state: $state) {
@@ -91,16 +91,16 @@ const PipelineQuery = `
 func main() {
 	kingpin.Parse()
 
-	var build *Build
+	var build *build
 	var err error
 
 	if strings.Count(*buildSlug, "/") > 1 {
-		if build, err = fetchBuildByID(BuildQuery); err != nil {
+		if build, err = fetchBuildByID(buildQuery); err != nil {
 			log.Fatalf("graphql failed: %s", err)
 		}
 		build.ID = strings.Split(*buildSlug, "/")[2]
 	} else {
-		if build, err = fetchLatestBuild(PipelineQuery); err != nil {
+		if build, err = fetchLatestBuild(pipelineQuery); err != nil {
 			log.Fatalf("graphql failed: %s", err)
 		}
 	}
@@ -127,14 +127,14 @@ func main() {
 			} else {
 				logger.Print(*jobLog.Content)
 			}
-		}(edge.Job.Uuid)
+		}(edge.Job.UUID)
 	}
 	wg.Wait()
 }
 
-func fetchBuildByID(query string) (*Build, error) {
-	var res JobsResponse
-	var build Build
+func fetchBuildByID(query string) (*build, error) {
+	var res jobsResponse
+	var build build
 
 	client := buildClient()
 	req := buildRequest(query)
@@ -148,8 +148,8 @@ func fetchBuildByID(query string) (*Build, error) {
 	return &build, nil
 }
 
-func fetchLatestBuild(query string) (*Build, error) {
-	var res PipelineResponse
+func fetchLatestBuild(query string) (*build, error) {
+	var res pipelineResponse
 
 	client := buildClient()
 	req := buildRequest(query)
@@ -160,7 +160,7 @@ func fetchLatestBuild(query string) (*Build, error) {
 		return nil, err
 	}
 
-	return &res.Pipeline.Builds.Edges[0].Build, nil
+	return &res.Pipeline.Builds.Edges[0].build, nil
 }
 
 func buildClient() *graphql.Client {
