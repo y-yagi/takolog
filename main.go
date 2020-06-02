@@ -120,12 +120,14 @@ func main() {
 
 		go func(uuid string) {
 			defer wg.Done()
-			jobLog, _, err := buildkiteClient.Jobs.GetJobLog(jobArgs[0], jobArgs[1], build.ID, uuid)
-			if err != nil {
-				errmsg := fmt.Sprintf("Error: %v, ID: %v, uuid: %v\n", err, build.ID, uuid)
-				logger.Print(errmsg)
-			} else {
-				logger.Print(*jobLog.Content)
+			if len(uuid) != 0 {
+				jobLog, _, err := buildkiteClient.Jobs.GetJobLog(jobArgs[0], jobArgs[1], build.ID, uuid)
+				if err != nil {
+					errmsg := fmt.Sprintf("Error: %v, ID: %v, uuid: %v\n", err, build.ID, uuid)
+					logger.Print(errmsg)
+				} else {
+					logger.Print(*jobLog.Content)
+				}
 			}
 		}(edge.Job.UUID)
 	}
