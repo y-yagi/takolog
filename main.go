@@ -122,7 +122,7 @@ func main() {
 			defer wg.Done()
 			jobLog, _, err := buildkiteClient.Jobs.GetJobLog(jobArgs[0], jobArgs[1], build.ID, uuid)
 			if err != nil {
-				errmsg := fmt.Sprintf("Error: %v\n", err)
+				errmsg := fmt.Sprintf("Error: %v, ID: %v, uuid: %v\n", err, build.ID, uuid)
 				logger.Print(errmsg)
 			} else {
 				logger.Print(*jobLog.Content)
