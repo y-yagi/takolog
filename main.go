@@ -21,6 +21,10 @@ var (
 func main() {
 	kingpin.Parse()
 
+	if len(strings.Split(*buildSlug, "/")) != 3 {
+		log.Fatalf("please specify build slug format as organization-slug/pipeline-slug/build-number")
+	}
+
 	var build *buildkite.Build
 	var err error
 
